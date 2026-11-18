@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GATE CSE 2027 Tracker</title>
+<style>
+:root{--bg:#eef2f6;--card:#fff;--ink:#14213d;--mute:#5b6b82;--line:#d5dde8;--acc:#1d4ed8;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--soft:#e3ebf7}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:50px}
+h1,h2,.big{font-family:Georgia,"Times New Roman",serif}
+header{background:var(--ink);color:#fff;padding:22px 16px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 14px}
+header .wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end}
+h1{font-size:1.5rem;font-weight:700}
+header p{color:#b8c4d9;font-size:.85rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.stat small{color:var(--mute);font-size:.78rem}
+.big{font-size:1.6rem;font-weight:700;display:block}
+.bar{height:6px;background:var(--soft);border-radius:9px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--ok);width:0}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+nav button,.btn{font:inherit;font-weight:600;font-size:.88rem;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+nav button.on,.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.tab{display:none}.tab.on{display:block}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+select,input[type=text],input[type=number],input[type=date]{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);min-width:0}
+.scroll{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--soft);font-weight:600;color:var(--mute);font-size:.82rem;white-space:nowrap}
+tr.done td{color:var(--mute)}tr.done .t{text-decoration:line-through}
+tr.today td{background:#fff7e0;box-shadow:inset 3px 0 0 var(--warn)}
+tr.rest td{background:#f4f7fb}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--ok)}
+.pyq{width:64px}
+.ph{font-size:.75rem;font-weight:600;padding:1px 8px;border-radius:9px;background:var(--soft);color:var(--acc)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.sc{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px}
+.sc h2{font-size:1.05rem;margin-bottom:2px}.sc small{color:var(--mute);display:block;margin-bottom:8px}
+.sc label{display:flex;gap:8px;align-items:center;padding:3px 0}
+.sc input[type=number]{width:80px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+.x{background:none;border:0;color:var(--bad);font-weight:700;cursor:pointer;font-size:1rem}
+.empty{color:var(--mute);padding:16px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div><h1>GATE CSE 2027 Tracker</h1><p>Target: AIR under 100. Exam starts Feb 6, 2027 (check your paper date on the admit card).</p></div>
+  <div class="tools" style="margin:0">
+    <button class="btn" onclick="exportData()">Download backup</button>
+    <label class="btn">Restore backup<input type="file" accept=".json" hidden onchange="importData(event)"></label>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><small>Days to exam</small><span class="big" id="sLeft">-</span></div>
+    <div class="stat"><small>Study days done</small><span class="big" id="sPct">0%</span><div class="bar"><i id="sBar"></i></div></div>
+    <div class="stat"><small>Mocks / average score</small><span class="big" id="sMock">0 / -</span></div>
+    <div class="stat"><small>PYQs solved</small><span class="big" id="sPyq">0</span></div>
+  </div>
+  <nav>
+    <button class="on" onclick="tab('schedule',this)">Daily schedule</button>
+    <button onclick="tab('subjects',this)">Subjects</button>
+    <button onclick="tab('mocks',this)">Mock tests</button>
+    <button onclick="tab('mistakes',this)">Mistake notebook</button>
+  </nav>
+
+  <section id="schedule" class="tab on">
+    <div class="tools">
+      <select id="fPhase" onchange="rSched()">
+        <option value="">All phases</option>
+        <option value="1">Phase 1: Syllabus + PYQs</option>
+        <option value="2">Phase 2: Mocks + analysis</option>
+        <option value="3">Phase 3: Final revision</option>
+      </select>
+      <select id="fStat" onchange="rSched()">
+        <option value="">All days</option><option value="p">Pending only</option><option value="d">Done only</option>
+      </select>
+      <button class="btn" onclick="jumpToday()">Go to today</button>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Day</th><th>Date</th><th>Phase</th><th>Subject</th><th>Today's target</th><th>GA 45 min</th><th>Study done</th><th>PYQs</th></tr></thead>
+      <tbody id="schedBody"></tbody>
+    </table></div>
+  </section>
+
+  <section id="subjects" class="tab"><div class="cards" id="subCards"></div></section>
+
+  <section id="mocks" class="tab">
+    <div class="form">
+      <input type="date" id="mDate">
+      <input type="text" id="mName" placeholder="Test name">
+      <input type="number" id="mScore" step="0.01" placeholder="Marks / 100">
+      <input type="number" id="mAcc" step="0.1" placeholder="Accuracy %">
+      <input type="number" id="mSilly" step="0.01" placeholder="Marks lost to silly errors">
+      <button class="btn pri" onclick="addMock()">Add mock</button>
+    </div>
+    <div class="scroll"><table><thead><tr><th>Date</th><th>Test</th><th>Marks</th><th>Accuracy</th><th>Silly loss</th><th></th></tr></thead><tbody id="mockBody"></tbody></table></div>
+  </section>
+
+  <section id="mistakes" class="tab">
+    <div class="form">
+      <select id="eSub"></select>
+      <select id="eType"><option>Concept gap</option><option>Misread question</option><option>Calculation error</option><option>Time pressure</option><option>Guessed wrong</option></select>
+      <input type="text" id="eNote" placeholder="What to remember next time" style="grid-column:span 2">
+      <button class="btn pri" onclick="addErr()">Add mistake</button>
+    </div>
+    <div class="scroll"><table><thead><tr><th>Subject</th><th>Type</th><th>Rule to remember</th><th>Fixed</th><th></th></tr></thead><tbody id="errBody"></tbody></table></div>
+  </section>
+</div>
+
+<script>
+const START = new Date(2026, 10, 19), EXAM = new Date(2027, 1, 6), KEY = "gate2027_tracker_v2";
+// [subject, phase, [one target per day]]
+const PLAN = [
+["Engg & Discrete Math",1,["Linear algebra: rank, systems, eigenvalues","Cayley-Hamilton, LU, calculus limits","Maxima/minima, integrals, partial derivatives","Probability: Bayes, random variables, distributions","Combinatorics, pigeonhole, generating functions","Graph theory: connectivity, Euler, planar, colouring","Propositional and first-order logic","Sets, relations, lattices, groups","Subject test (90 min) + error log"]],
+["C & Data Structures",1,["Pointers, arrays, strings, scoping","Recursion, structs/unions, tricky output","Linked lists, stacks, queues, expressions","Trees (BST, AVL, B-tree) and heaps","Subject test (90 min) + error log"]],
+["Algorithms",1,["Asymptotics, recurrences, Master theorem","Divide and conquer, sorting bounds","Greedy, DP (LCS, knapsack, MCM), graph algorithms","Subject test + revise Block 1 notes"]],
+["Operating Systems",1,["Processes, threads, CPU scheduling","Synchronization, semaphores, classic problems","Deadlocks, Banker's algorithm, memory allocation","Virtual memory, paging, TLB, access time","Page replacement, thrashing, disk scheduling","Subject test (90 min) + error log"]],
+["DBMS",1,["ER to relational, functional dependencies","Normalization up to BCNF, lossless join","Relational algebra, tuple calculus, SQL","Transactions, serializability, 2PL, B+ trees","Subject test (90 min) + error log"]],
+["Computer Networks",1,["OSI/TCP-IP, framing, CRC, CSMA/CD","IPv4, CIDR, subnetting, NAT, ARP","Routing: distance vector, OSPF, BGP","Sliding window, efficiency, timers","TCP, congestion control, DNS/HTTP/SMTP","Subject test + revise Block 2 notes"]],
+["Theory of Computation",1,["DFA, NFA, minimization, Mealy/Moore","Regular expressions, pumping lemma, closure","CFG, CNF, pushdown automata","Turing machines, decidability, Rice theorem","Subject test (90 min) + error log"]],
+["Compiler Design",1,["Lexical analysis, FIRST/FOLLOW, LL(1)","LR(0), SLR, LALR, CLR, SDT","Three-address code, basic blocks, CFG + test"]],
+["Digital Logic & COA",1,["Boolean algebra, K-maps, combinational circuits","Sequential circuits, number systems, IEEE 754","Instructions, addressing modes, control unit","Pipelining hazards, cache mapping","Subject test + revise Block 3 notes"]]
+];
+for(let i=1;i<=10;i++){
+  PLAN.push(["Mock cycle "+i,2,["Full-length mock #"+i+" (3 hours, strict timing)"]]);
+  PLAN.push(["Analysis & repair",2,["Analyse mock #"+i+", re-solve weak-topic PYQs, update mistake notebook"]]);
+}
+PLAN.push(["Final revision",3,["Notes sweep: Math, DM, C/DS, Algorithms","Notes sweep: OS, DBMS, Networks","Notes sweep: TOC, Compiler, Digital, COA","Re-solve bookmarked trap questions (set 1)","Re-solve bookmarked trap questions (set 2)","Formula recall + General Aptitude speed test"]],
+["Exam-slot mocks",3,["Mock #11 in your exact exam time slot","Mock #12 in your exact exam time slot"]],
+["Last checks",3,["Review the full mistake notebook","Skim formulas: probability, cache, paging, TCP, parsers","Light review until 4 PM. Pack admit card and ID. Sleep early."]]);
+const SUBJ = [["Engg & Discrete Math","13-15"],["General Aptitude","15"],["C & Data Structures","10-12"],["Algorithms","7-9"],["Operating Systems","8-10"],["DBMS","7-9"],["Computer Networks","7-9"],["Theory of Computation","7-9"],["Compiler Design","4-6"],["Digital Logic & COA","10-12"]];
+
+function fresh(){
+  const days=[];
+  PLAN.forEach(([s,p,t])=>t.forEach(x=>days.push({sub:s,ph:p,t:x,ga:false,done:false,pyq:0})));
+  return {days,subs:SUBJ.map(s=>({n:s[0],w:s[1],notes:false,p1:false,p2:false,score:""})),mocks:[],errs:[]};
+}
+let S; try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.days)S=fresh();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}stats()}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dateOf=i=>{const d=new Date(START);d.setDate(d.getDate()+i);return d};
+const fmt=d=>d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
+const todayIdx=()=>{const n=new Date();n.setHours(0,0,0,0);return Math.round((n-START)/864e5)};
+
+function stats(){
+  const n=new Date();n.setHours(0,0,0,0);
+  document.getElementById("sLeft").textContent=Math.max(0,Math.round((EXAM-n)/864e5));
+  const d=S.days.filter(x=>x.done).length,p=Math.round(d/S.days.length*100);
+  document.getElementById("sPct").textContent=p+"% ("+d+"/"+S.days.length+")";
+  document.getElementById("sBar").style.width=p+"%";
+  const m=S.mocks.length,avg=m?(S.mocks.reduce((a,x)=>a+Number(x.score),0)/m).toFixed(1):"-";
+  document.getElementById("sMock").textContent=m+" / "+avg;
+  document.getElementById("sPyq").textContent=S.days.reduce((a,x)=>a+(Number(x.pyq)||0),0);
+}
+function tab(id,b){
+  document.querySelectorAll(".tab").forEach(e=>e.classList.remove("on"));
+  document.querySelectorAll("nav button").forEach(e=>e.classList.remove("on"));
+  document.getElementById(id).classList.add("on");b.classList.add("on");
+}
+function rSched(){
+  const fp=document.getElementById("fPhase").value,fs=document.getElementById("fStat").value,ti=todayIdx();
+  document.getElementById("schedBody").innerHTML=S.days.map((d,i)=>{
+    if(fp&&String(d.ph)!==fp)return"";
+    if(fs==="d"&&!d.done)return"";
+    if(fs==="p"&&d.done)return"";
+    const cls=(d.done?"done ":"")+(i===ti?"today ":"");
+    return `<tr id="day${i}" class="${cls}"><td>${i+1}</td><td>${fmt(dateOf(i))}</td><td><span class="ph">P${d.ph}</span></td><td>${esc(d.sub)}</td><td class="t">${esc(d.t)}</td>
+    <td><input type="checkbox" aria-label="GA done day ${i+1}" ${d.ga?"checked":""} onchange="tg(${i},'ga',this.checked)"></td>
+    <td><input type="checkbox" aria-label="Study done day ${i+1}" ${d.done?"checked":""} onchange="tg(${i},'done',this.checked)"></td>
+    <td><input class="pyq" type="number" min="0" value="${d.pyq}" aria-label="PYQs day ${i+1}" onchange="S.days[${i}].pyq=Number(this.value)||0;save()"></td></tr>`;
+  }).join("")||`<tr><td class="empty" colspan="8">No days match this filter.</td></tr>`;
+}
+function tg(i,f,v){S.days[i][f]=v;save();if(f==="done")rSched()}
+function jumpToday(){
+  document.getElementById("fPhase").value="";document.getElementById("fStat").value="";rSched();
+  const e=document.getElementById("day"+todayIdx());
+  if(e)e.scrollIntoView({block:"center",behavior:"smooth"});else alert("Today is outside the 79-day plan (Nov 19 to Feb 5).");
+}
+function rSubs(){
+  document.getElementById("subCards").innerHTML=S.subs.map((s,i)=>`<div class="sc"><h2>${esc(s.n)}</h2><small>Typically ${s.w} marks</small>
+  <label><input type="checkbox" ${s.notes?"checked":""} onchange="S.subs[${i}].notes=this.checked;save()"> Short notes made</label>
+  <label><input type="checkbox" ${s.p1?"checked":""} onchange="S.subs[${i}].p1=this.checked;save()"> PYQ pass 1 done</label>
+  <label><input type="checkbox" ${s.p2?"checked":""} onchange="S.subs[${i}].p2=this.checked;save()"> PYQ pass 2 (re-solve) done</label>
+  <label>Subject test % <input type="number" min="0" max="100" value="${esc(s.score)}" onchange="S.subs[${i}].score=this.value;save()"></label></div>`).join("");
+  document.getElementById("eSub").innerHTML=SUBJ.map(s=>`<option>${esc(s[0])}</option>`).join("");
+}
+function addMock(){
+  const g=id=>document.getElementById(id),name=g("mName").value.trim(),score=g("mScore").value;
+  if(!name||score===""){alert("Enter the test name and marks.");return}
+  S.mocks.unshift({date:g("mDate").value||new Date().toISOString().slice(0,10),name,score,acc:g("mAcc").value||"-",silly:g("mSilly").value||0});
+  ["mName","mScore","mAcc","mSilly"].forEach(id=>g(id).value="");save();rMocks();
+}
+function rMocks(){
+  document.getElementById("mockBody").innerHTML=S.mocks.map((m,i)=>{
+    const c=m.score>=75?"var(--ok)":m.score>=60?"var(--warn)":"var(--bad)";
+    return `<tr><td>${esc(m.date)}</td><td>${esc(m.name)}</td><td style="color:${c};font-weight:700">${esc(m.score)}</td><td>${esc(m.acc)}${m.acc==="-"?"":"%"}</td><td>${esc(m.silly)}</td><td><button class="x" aria-label="Delete mock" onclick="S.mocks.splice(${i},1);save();rMocks()">&times;</button></td></tr>`;
+  }).join("")||`<tr><td class="empty" colspan="6">No mocks logged yet. Add your first one above.</td></tr>`;
+}
+function addErr(){
+  const note=document.getElementById("eNote").value.trim();
+  if(!note){alert("Write the rule or trap you want to remember.");return}
+  S.errs.unshift({sub:document.getElementById("eSub").value,type:document.getElementById("eType").value,note,fixed:false});
+  document.getElementById("eNote").value="";save();rErrs();
+}
+function rErrs(){
+  document.getElementById("errBody").innerHTML=S.errs.map((e,i)=>`<tr><td>${esc(e.sub)}</td><td>${esc(e.type)}</td><td>${esc(e.note)}</td><td><input type="checkbox" ${e.fixed?"checked":""} onchange="S.errs[${i}].fixed=this.checked;save()"></td><td><button class="x" aria-label="Delete entry" onclick="S.errs.splice(${i},1);save();rErrs()">&times;</button></td></tr>`).join("")||`<tr><td class="empty" colspan="5">No mistakes logged yet. Add one after your next mock.</td></tr>`;
+}
+function exportData(){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}));
+  a.download="gate-tracker-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.days)throw 0;S=d;save();rSched();rSubs();rMocks();rErrs();alert("Backup restored.")}catch(x){alert("That file is not a valid tracker backup.")}};
+  r.readAsText(f);
+}
+stats();rSched();rSubs();rMocks();rErrs();
+</script>
+</body>
+</html>
